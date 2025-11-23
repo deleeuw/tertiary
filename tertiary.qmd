@@ -1,0 +1,141 @@
+---
+title: Tertiary Approach Considered Harmful
+author: 
+    - name: Jan de Leeuw
+      orcid: 0000-0003-1420-1797
+      email: jan@deleeuwpdx.net
+      affiliation: 
+        - name: University of California Los Angeles
+          city: Los Angeles
+          state: CA
+          url: www.ucla.edu
+      license: "CC0"
+date: last-modified
+date-format: long
+bibliography: [mypubs.bib, total.bib]
+number-sections: true
+---
+
+```{r loadpackages, echo = FALSE}
+suppressPackageStartupMessages(library(knitr, quietly = TRUE))
+suppressPackageStartupMessages(library(tinytex, quietly = TRUE))
+```
+
+\sectionbreak 
+
+**Note:** This is a working manuscript which may be expanded/updated
+multiple times. All suggestions for improvement are welcome. All Rmd, tex,
+html, pdf, R, and C files are in the public domain. Attribution will be
+appreciated, but is not required. The files can be found at
+<https://github.com/deleeuw/tertiary> 
+
+\sectionbreak
+
+
+# Introduction
+
+In monotone regression the data is 
+
+* the *target*, a numerical vector $y$ of length $n$,
+* a total order $\preceq$ on $\mathcal{N}:=\{1,2,\cdots,n\}$
+
+We define 
+
+* $i\approx j$ if both $i\preceq j$ and $j\preceq i$,
+* $i\prec j$ if $i\preceq j$ but not $j\preceq i$.
+
+In this paper we will only consider the case of a total order, which means that for all $(i,j)$ either $i\preceq j$
+or $j\preceq i$ (or both). If $i\approx j$ we say the pair $(i,j)$ is a *tie*. Since being tied is an equivalence relation it partitions $\mathcal{N}$ into equivalence classes, called *tie-blocks*. 
+
+In the least squares version of monotone regression we minimize the weighted least squares loss function
+\begin{equation}
+\sigma(x):=\sum_{i=1}^nw_i(x_i-y_i)^2
+\end{equation}
+over all $x$ for which $x_i\leq x_j$ if $i\prec j$. This definition of the monotone regression problem does
+not say what to do with ties. If there are no ties then the $x_i$ must satisfy a total order: if $1\prec\cdots\prec n$ we require $x_1\leq\cdots\leq x_n$.
+
+If there are ties in the data then the users of a non-metric scaling programm typically has to choose from various options. The two most prominent ones, proposed by @kruskal_64a and @kruskal_64b, are 
+
+* Primary Approach: $x_i\leq x_j$ if $i\prec j$,
+* Secondary Approach: $x_i\leq x_j$ if $i\preceq j$. 
+
+In the primary approach there are no constraints within tie-blocks, in the secondary approach it follows that we require $x_i=x_j$ if $i\approx j$. Also see @guttman_68 for an extensive discussion of these options. 
+
+@kruskal_64a showed that primary approach monotone regression can be solved by redefining the constraints.
+
+* Primary Approach Redux: $x_i\leq x_j$ if $i\prec j$ and if $(i\approx j)\wedge (y_i<y_j)$.
+
+Thus $y$ is used to order the indices within tie-blocks, and there is no pair $(i,j)$ with $i\approx j$
+and $y_i=y_j$ the resulting constraints
+on $x$ define a total order. Kruskal does not give an explicit rule to deal with
+$(i\approx j)\wedge (y_i=y_j)$, but seems to suggest to
+complete the total order by requiring either $x_i\leq x_j$ or $x_j\leq x_i$. Which one of the 
+two choices we make does not matter for the outcome of the monotone regression.
+
+We need some additional notation for solving the monotone regression problem with the
+secondary approach to ties. Suppose there are $m<n$ tie-blocks. Compute the tie-block
+weighted averages $\overline y_k$. Also compute the tie-block weights $\overline w_k$
+as the sum of the $w_i$ in the tie-block.Then minimize
+$$
+\sigma(\overline x):=\sum_{k=1}^m\overline w_k(\overline x_k-\overline y_k)^2
+$$
+with the constraints
+
+* Secondary Approach Redux: $\overline x_k\leq\overline x_\ell$ if $k<\ell$.
+
+See @deleeuw_A_77 for explicit proofs of the optimality of the two redux
+versions.
+
+* Tertiary Approach: $\overline x_k\leq\overline x_\ell$ if $I_k\prec I_\ell$.
+
+Suppose there are only $m<n$ different values in $y$. Define the tie-block averages $\overline y_k$
+as the weighted average of the $y_i$ in tie-block $k$.
+
+the tertiary approach is 
+in @deleeuw_A_77. All three approaches are implemented as options in the 
+smacof package (@deleeuw_mair_A_09c, @mair_groenen_deleeuw_A_22). 
+
+# The Tertiary Approach
+
+If there are only a few ties and there is a good fit the difference
+between the three approaches will be small. But in general there are 
+several problems with the tertiary approach, and users of the smacof program should think twice before using it.
+
+It is shown in @deleeuw_A_77 that the solution of is given by
+$$
+y_i=\overline y_j+(x_i-\overline x_j)
+$$
+
+In the first place the monotone regression solution with the tertiary approach to ties may produce a 
+vector $y$ which is 
+
+
+\sectionbreak
+
+# References
+
+
+The first
+is to ignore ties. 
+
+$$
+y_i=\overline{y}_j+(x_i-\overline{x}_j)
+$$
+
+Example: two classes, equal number of elements. If the two group means are out of order $\overline{x}_1>\overline x_2$
+we have 
+$$
+\overline{y}_1=\overline{y}_2=\tfrac12(\overline{x}_1+\overline{x}_2)
+$$
+Thus for $i\in I_1$
+$$
+y_i=\tfrac12(\overline{x}_1+\overline{x}_2)+(x_i-\overline{x}_1)=x_i-\tfrac12(\overline x_1-\overline x_2)
+$$
+Thbus $y_i<0$ if $x_i<\tfrac12(\overline x_1-\overline x_2)$
+
+For $i\in I_2$
+$$
+y_i=\tfrac12(\overline{x}_1+\overline{x}_2)+(x_i-\overline{x}_2)=x_i+\tfrac12(\overline x_1-\overline x_2)\geq 0.
+$$
+$x=(1,9,1,3)$ Then $\overline x_1=5$ and overline $\overline x_2=2$. Thus $\overline{x}_1-\overline{x}_2=3$
+and $y$ is $(-.5,7.5,2.5,4.5)$
