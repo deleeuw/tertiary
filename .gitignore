@@ -3,7 +3,6 @@
 .RData
 .Ruserdata
 *.tex
-*.pdf
 *.aux
 *.md
 *.Rproj

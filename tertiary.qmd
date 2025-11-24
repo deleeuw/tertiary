@@ -14,13 +14,43 @@ date: last-modified
 date-format: long
 bibliography: [mypubs.bib, total.bib]
 number-sections: true
+pdf-engine: lualatex
+keep-tex: true
+format:
+   pdf:
+    fontsize: 12pt
+    include-in-header: 
+     - preamble.tex
+    keep-tex: true
+    link-citations: true
+    documentclass: scrartcl
+    number-sections: true
+   html:
+    fontsize: 12pt
+    include-in-header: 
+     - preamble.css
+    keep-md: true
+    number-sections: true
+toc: true
+toc-depth: 3
+editor: source
+papersize: letter
+graphics: true
+link-citations: true
+mainfont: Times New Roman
+abstract: In ordinal non-metric scaling @kruskal_64a introduced two different ways to handle ties in the data.
+  @deleeuw_A_77 added a third one, appropriately called the tertiary approach. In this paper we point out 
+  some problems that can occur when using the tertiary approach and interpreting its results.
 ---
 
 ```{r loadpackages, echo = FALSE}
 suppressPackageStartupMessages(library(knitr, quietly = TRUE))
 suppressPackageStartupMessages(library(tinytex, quietly = TRUE))
 ```
-
+```{r sourcefiles, echo = FALSE}
+source("smacofSS.R")
+source("morseData.R")
+```
 \sectionbreak 
 
 **Note:** This is a working manuscript which may be expanded/updated
@@ -34,80 +64,148 @@ appreciated, but is not required. The files can be found at
 
 # Introduction
 
-In monotone regression the data is 
+In the monotone regression problem considered in this paper the data consist of the *target*, 
+a numerical vector $y$ of length $n$, and a partitioning of $\mathcal{N}:=\{1,2,\cdots,n\}$ into $m\leq n$ subsets $\mathcal{N}_k$, called *tie-blocks*. Tie-blocks $\mathcal{N}_k$ is *earlier* than tie-block $\mathcal{N}_\ell$ if and only if $k<\ell$. We also construct a total partial order $\preceq$ on $\mathcal{N}$, with corresponding $i\equiv j$ if both $i\preceq j$ and $j\preceq i$, and $i\prec j$ if $i\preceq j$ and not $j\preceq i$.
+Define $i\equiv j$ if $i$ and $j$ are in the same tie-block and $i\prec j$ if $i$ is in an earlier tie-block than $j$.
 
-* the *target*, a numerical vector $y$ of length $n$,
-* a total order $\preceq$ on $\mathcal{N}:=\{1,2,\cdots,n\}$
-
-We define 
-
-* $i\approx j$ if both $i\preceq j$ and $j\preceq i$,
-* $i\prec j$ if $i\preceq j$ but not $j\preceq i$.
-
-In this paper we will only consider the case of a total order, which means that for all $(i,j)$ either $i\preceq j$
-or $j\preceq i$ (or both). If $i\approx j$ we say the pair $(i,j)$ is a *tie*. Since being tied is an equivalence relation it partitions $\mathcal{N}$ into equivalence classes, called *tie-blocks*. 
-
-In the least squares version of monotone regression we minimize the weighted least squares loss function
+In the least squares version of monotone regression in which all tie-blocks have only a single element
+we minimize the weighted least squares loss function
 \begin{equation}
 \sigma(x):=\sum_{i=1}^nw_i(x_i-y_i)^2
 \end{equation}
-over all $x$ for which $x_i\leq x_j$ if $i\prec j$. This definition of the monotone regression problem does
-not say what to do with ties. If there are no ties then the $x_i$ must satisfy a total order: if $1\prec\cdots\prec n$ we require $x_1\leq\cdots\leq x_n$.
+over all numerical $x$ with $x_1\leq x_2\leq\cdots x_n$. This special case of the constraints, which leads to a simple $O(n)$ algorithm, is called the *linear case*.
 
-If there are ties in the data then the users of a non-metric scaling programm typically has to choose from various options. The two most prominent ones, proposed by @kruskal_64a and @kruskal_64b, are 
+If there are ties then the user of a non-metric scaling programm typically have to choose from various options. The two most prominent ones, proposed and baptized by @kruskal_64a and @kruskal_64b, are the *primary* and *secondary* approach to ties. 
 
-* Primary Approach: $x_i\leq x_j$ if $i\prec j$,
-* Secondary Approach: $x_i\leq x_j$ if $i\preceq j$. 
-
-In the primary approach there are no constraints within tie-blocks, in the secondary approach it follows that we require $x_i=x_j$ if $i\approx j$. Also see @guttman_68 for an extensive discussion of these options. 
-
-@kruskal_64a showed that primary approach monotone regression can be solved by redefining the constraints.
-
-* Primary Approach Redux: $x_i\leq x_j$ if $i\prec j$ and if $(i\approx j)\wedge (y_i<y_j)$.
-
-Thus $y$ is used to order the indices within tie-blocks, and there is no pair $(i,j)$ with $i\approx j$
-and $y_i=y_j$ the resulting constraints
-on $x$ define a total order. Kruskal does not give an explicit rule to deal with
-$(i\approx j)\wedge (y_i=y_j)$, but seems to suggest to
+In the primary approach
+we require $x_i\leq x_j$ if $i\prec j$ and there are no constraints within tie-blocks. @kruskal_64b showed that primary approach monotone regression can be solved by requiring $x_i\leq x_j$ if
+$i\prec j$ but also if $i\approx j$ and $y_i<y_j$. Thus $y$ is used to order the indices within tie-blocks. If $i\approx j$ as well as $y_i=y_j$ we
 complete the total order by requiring either $x_i\leq x_j$ or $x_j\leq x_i$. Which one of the 
 two choices we make does not matter for the outcome of the monotone regression.
+There are no more ties and we proceed as in the linear case. A formal proof that this solves the primary case is in @deleeuw_A_77.
 
-We need some additional notation for solving the monotone regression problem with the
-secondary approach to ties. Suppose there are $m<n$ tie-blocks. Compute the tie-block
-weighted averages $\overline y_k$. Also compute the tie-block weights $\overline w_k$
-as the sum of the $w_i$ in the tie-block.Then minimize
-$$
-\sigma(\overline x):=\sum_{k=1}^m\overline w_k(\overline x_k-\overline y_k)^2
-$$
-with the constraints
-
-* Secondary Approach Redux: $\overline x_k\leq\overline x_\ell$ if $k<\ell$.
-
-See @deleeuw_A_77 for explicit proofs of the optimality of the two redux
-versions.
-
-* Tertiary Approach: $\overline x_k\leq\overline x_\ell$ if $I_k\prec I_\ell$.
-
-Suppose there are only $m<n$ different values in $y$. Define the tie-block averages $\overline y_k$
-as the weighted average of the $y_i$ in tie-block $k$.
-
-the tertiary approach is 
-in @deleeuw_A_77. All three approaches are implemented as options in the 
-smacof package (@deleeuw_mair_A_09c, @mair_groenen_deleeuw_A_22). 
+In the secondary approach
+we require $x_i\leq x_j$ if $i\preceq j$, which implies $x_i=x_j$ if $i\equiv j$.
+@kruskal_64b also that the secondary approach can be solved by a linear case
+algorithm on the tie-block weighted averages
+\begin{equation}
+\overline y_k=\frac{\sum_{i\in\mathcal{N}_k}w_iy_i}{\sum_{i\in\mathcal{N}_k}w_i}
+\end{equation}
+with tie-block weights
+\begin{equation}
+\overline w_k=\sum_{i\in\mathcal{N}_k}w_i.
+\end{equation}
+For this monotone regression the solution is, say, $\overline x_k$.
+The secondary approach then has the solution $x$ with $x_i$ equal to the
+$\overline x_k$ of its tie-block. For a formal proof, again see 
+@deleeuw_A_77.
 
 # The Tertiary Approach
 
+The tie-block averages $\overline y_k$, and their monotone regression $\overline x_k$,
+were also used by @deleeuw_A_77 to define a *tertiary* approach, which requires $\overline x_k\leq\overline x_\ell$ if $k<\ell$. There are no other constraints on the $x_i$. It is shown in @deleeuw_A_77 that the 
+solution for $x$ is given by
+\begin{equation}
+x_i=\overline x_k+(y_i-\overline y_k).\label{tertindi}
+\end{equation}
+All three approaches are implemented as options in the 
+smacof package (@deleeuw_mair_A_09c, @mair_groenen_deleeuw_A_22) and the smacofx package
+(@rusch_deleeuw_chen_mair_25).
+
 If there are only a few ties and there is a good fit the difference
-between the three approaches will be small. But in general there are 
-several problems with the tertiary approach, and users of the smacof program should think twice before using it.
+between the three approaches will be small. But there are 
+several problems with the tertiary approach, and users of the smacof program 
+should think twice before using it.
 
-It is shown in @deleeuw_A_77 that the solution of is given by
-$$
-y_i=\overline y_j+(x_i-\overline x_j)
-$$
+Before pointing out what the problems are we first analyze an example. We use the 
+symmetrized version of the morse code data of @rothkopf_57, available in the
+smacof package. The morse code data are analyzed three times, with the primary, secondary,
+and tertiary approach. We iterate until stress, the MDS loss function, changes
+less than  `r 1e-10` from one iteration to the next. All weights are one.
 
-In the first place the monotone regression solution with the tertiary approach to ties may produce a 
-vector $y$ which is 
+```{r morse1, echo = FALSE, cache = TRUE}
+h1 <- smacofSS(morseData, ordinal = TRUE, ties = 1, verbose = FALSE)
+```
+```{r morse2, echo = FALSE, cache = TRUE}
+h2 <- smacofSS(morseData, ordinal = TRUE, ties = 2, verbose = FALSE)
+```
+```{r morse3, echo = FALSE, cache = TRUE}
+h3 <- smacofSS(morseData, ordinal = TRUE, ties = 3, verbose = FALSE)
+```
+
+For the primary approach the analysis takes `r h1$niter` iterations, with final loss function value `r formatC(h1$stress, digits = 10, format = "f")`. For the secondary approach this is `r h2$niter` iterations and loss `r formatC(h2$stress, digits = 10, format = "f")`. For the tertiary approach we
+use `r h3$niter` iterations and find loss `r formatC(h3$stress, digits = 10, format = "f")`.
+
+For each analysis we give two plots. The first three plots are the
+Shepard plots, with dissimilarties on the horizontal axis and 
+final distances and disparities (i.e. the final monotone regression of the distances) on the
+vertical axis. The next three plots have final distance on the horizontal
+axis and disparity on the vertical axis.
+
+
+```{r plotmorse, fig.align = "center", fig.width = 8, fig.height = 8, echo = FALSE}
+par(pty = "s")
+smacofShepardPlot(h1, main = "Shepard Plot, Morse Data, Ordinal, Primary")
+smacofShepardPlot(h2, main = "Shepard Plot, Morse Data, Ordinal, Secondary")
+smacofShepardPlot(h3, main = "Shepard Plot, Morse Data, Ordinal, Tertiary")
+smacofDistDhatPlot(h1, fitlines = FALSE, main = "DistDhat Plot, Morse Data, Ordinal, Primary")
+smacofDistDhatPlot(h2, fitlines = FALSE, main = "DistDhat Plot, Morse Data, Ordinal, Secondary")
+smacofDistDhatPlot(h3, fitlines = FALSE, main = "DistDhat Plot, Morse Data, Ordinal, Tertiary")
+```
+
+The plots illlustrate some of the problems with the tertiary approach. In examples like this,
+with a fairly large numbers of ties and a rather bad fit using the primary or secondary approach, the Shepard plots 
+for the tertiary approach are very far from monotone. The monotone trend may still be there but the
+plot goes up and down when connecting successive points. To some extend this is emphasized by drawing the
+connection lines, but even if we leave them out the scatterplot looks like a bad fit.
+```{r nolines, fig.align = "center", fig.width = 8, fig.height = 8, echo = FALSE}
+par(pty = "s")
+smacofShepardPlot(h3, fitlines = FALSE, collines = FALSE, main = "Shepard Plot, Morse Data, Ordinal, Tertiary")
+```
+This brings us to the next problem with the tertiary approach. Although the Shepard plot suggests a bad fit, 
+the dist-dhat plot shows an almost perfect fit, corresponding with the very small value of the final stress. There
+is nothing really wrong with this result, but it can be misleading. The fit of the tertiary approach may not be too good to be true, but it may be too good to be useful.
+
+There is a more serious problem that can happen, although it does not occur in the morse code example. Consider a 
+small example with two tie-blocks, each having an equal number of elements. All weights are one. If
+the tie-block means $\overline{y}_1$ and $\overline{y}_2$ are in the correct order, then monotone
+regression with the tertiary approach gives $x_i=y_i$ and we have perfect fit. If $\overline{y}_1>\overline{y}_2$
+then $\overline{x}_1$ and $\overline{x}_2$ are both equal to $\overline{y}$, the overall mean. Thus for
+$i$ in $\mathcal{N}_1$ the optimal $x_i$ is, from \eqref{tertindi},
+\begin{subequations}
+\begin{equation}
+x_i=\tfrac12(\overline{y}_1+\overline{y}_2)+(y_i-\overline{y}_1)=y_i-\tfrac12(\overline y_1-\overline y_2),\label{block1}
+\end{equation}
+and for $i$ in the second tie-block
+\begin{equation}
+x_i=\tfrac12(\overline{y}_1+\overline{y}_2)+(y_i-\overline{y}_2)=y_i+\tfrac12(\overline y_1-\overline y_2).\label{block2}
+\end{equation}
+\end{subequations}
+In multidimensional scaling all $y_i$ are typically non-negative. From \eqref{block2} the $x_i$ with $i$ in the
+second tie block are then also non-negative. But, from \eqref{block1}, if $\overline{y}_1>\overline{y}_2$ and $i$ is in the
+first tie-block we have $x_i<0$ for all $i$ with $\smash{y_i<\tfrac12(\overline y_1-\overline y_2)}$. Suppose for
+example $y=(1,9,1,3)$, with the first two indices in the first tie-block and the last two in the
+second tie-block. Then $\overline y_1=5$ and $\overline y_2=2$, and thus $\smash{\tfrac12(\overline{y}_1-\overline{y}_2)}=1.5$
+and the monotone regression is $(-.5,7.5,2.5,4.5)$.
+
+If a monotone regression in any smacof iteration produces negative disparities, then the majorization
+step in the next iteration may fail, and convergence of the algorithm is no longer guaranteed. There
+are ways to get around this problem (@heiser_91), but they involve a more complicated majorization
+procedure and lead to slower convergence. And this more complicated majorization step has not been implemented in any of the techniques in either the smacof or the smacofx packages.
+
+\sectionbreak
+
+# Discussion
+
+The title of this paper somewhat overstates the case against the tertiary approach. There is
+nothing inherently wrong with it, and if there are not many ties it will work as well as
+the primary and secondary approach. We could have, for example, some kind of design
+which produces tie-blocks of size two. But with many ties per block and only a few blocks
+we will tend to get almost perfect fits, and they may not really be the type of fit we want. In MDS we 
+generally want the individual dissimilarities to fit the corresponding distances, which means we
+surely do not want the type of Shepard plots like the one for the tertiary approach in the 
+morse data analysis. Without the corresponding plots reporting an almost perfect fit
+can be very misleading.
 
 
 \sectionbreak
@@ -115,27 +213,3 @@ vector $y$ which is
 # References
 
 
-The first
-is to ignore ties. 
-
-$$
-y_i=\overline{y}_j+(x_i-\overline{x}_j)
-$$
-
-Example: two classes, equal number of elements. If the two group means are out of order $\overline{x}_1>\overline x_2$
-we have 
-$$
-\overline{y}_1=\overline{y}_2=\tfrac12(\overline{x}_1+\overline{x}_2)
-$$
-Thus for $i\in I_1$
-$$
-y_i=\tfrac12(\overline{x}_1+\overline{x}_2)+(x_i-\overline{x}_1)=x_i-\tfrac12(\overline x_1-\overline x_2)
-$$
-Thbus $y_i<0$ if $x_i<\tfrac12(\overline x_1-\overline x_2)$
-
-For $i\in I_2$
-$$
-y_i=\tfrac12(\overline{x}_1+\overline{x}_2)+(x_i-\overline{x}_2)=x_i+\tfrac12(\overline x_1-\overline x_2)\geq 0.
-$$
-$x=(1,9,1,3)$ Then $\overline x_1=5$ and overline $\overline x_2=2$. Thus $\overline{x}_1-\overline{x}_2=3$
-and $y$ is $(-.5,7.5,2.5,4.5)$
